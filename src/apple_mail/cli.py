@@ -11,6 +11,7 @@ from dataclasses import asdict
 import click
 
 from .client import MailClient
+from .errors import MailError
 
 
 @click.group()
@@ -233,9 +234,9 @@ def open_cmd(ctx, id):
             _emit(ctx, {"opened": id})
         else:
             click.echo(f"Opened message {id} in Mail.app")
-    except RuntimeError as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("not_found", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)
@@ -253,9 +254,9 @@ def body_cmd(ctx, id):
             _emit(ctx, asdict(msg_body))
         else:
             click.echo(msg_body.body)
-    except RuntimeError as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("not_found", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)
@@ -337,9 +338,9 @@ def save_attachments_cmd(ctx, id, output, dry_run):
             else:
                 for name in saved:
                     click.echo(f"  Saved: {name}")
-    except RuntimeError as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("error", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)
@@ -356,9 +357,9 @@ def thread_cmd(ctx, id):
     client = _client(ctx)
     try:
         thread = client.get_thread(id)
-    except ValueError as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("not_found", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)
@@ -394,9 +395,9 @@ def export_cmd(ctx, id, thread, output):
             md = client.export_thread(id)
         else:
             md = client.export_message(id)
-    except (ValueError, RuntimeError) as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("not_found", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)
@@ -440,9 +441,9 @@ def mark_read_cmd(ctx, id, unread, dry_run):
             _emit(ctx, {"message_id": id, "read": not unread})
         else:
             click.echo(f"Marked message {id} as {action}")
-    except RuntimeError as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("not_found", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)
@@ -471,9 +472,9 @@ def flag_cmd(ctx, id, remove, dry_run):
             _emit(ctx, {"message_id": id, "flagged": not remove})
         else:
             click.echo(f"{'Unflagged' if remove else 'Flagged'} message {id}")
-    except RuntimeError as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("not_found", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)
@@ -501,9 +502,9 @@ def archive_cmd(ctx, id, account, dry_run):
             _emit(ctx, {"message_id": id, "archived": True})
         else:
             click.echo(f"Archived message {id}")
-    except RuntimeError as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("error", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)
@@ -556,9 +557,9 @@ def draft_cmd(ctx, to_addrs, subject, body, cc_addrs, bcc_addrs, dry_run):
             _emit(ctx, {"drafted": True, "to": list(to_addrs), "subject": subject})
         else:
             click.echo(f'Draft created: "{subject}" to {", ".join(to_addrs)}')
-    except RuntimeError as e:
+    except MailError as e:
         if _output_json(ctx):
-            _emit_error("error", str(e))
+            _emit_error(e.code, str(e))
         else:
             click.echo(f"Error: {e}", err=True)
             sys.exit(1)

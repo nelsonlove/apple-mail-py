@@ -1,8 +1,10 @@
-"""AppleScript interaction with Mail.app for open and body operations."""
+"""AppleScript interaction with Mail.app for read + write operations."""
 
 from __future__ import annotations
 
 import subprocess
+
+from .errors import AppleScriptError, MessageNotFoundError
 
 _NOT_FOUND = "__NOT_FOUND__"
 
@@ -28,7 +30,7 @@ def _run_applescript(script: str) -> str:
     )
     if result.returncode != 0:
         stderr = result.stderr.strip()
-        raise RuntimeError(f"AppleScript error: {stderr}")
+        raise AppleScriptError(stderr)
     return result.stdout.strip()
 
 
@@ -105,7 +107,7 @@ def _find_and_act(
     )
     result = _run_applescript(script)
     if result == _NOT_FOUND:
-        raise RuntimeError(f"Message {message_id} not found in Mail.app")
+        raise MessageNotFoundError(message_id)
     return result
 
 

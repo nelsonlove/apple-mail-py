@@ -7,6 +7,7 @@ All methods return data classes, never raw dicts.
 from __future__ import annotations
 
 from .db import MailDB
+from .errors import MailError, MessageNotFoundError
 from .models import Attachment, Mailbox, Message, MessageBody, Stats, Thread
 
 
@@ -122,7 +123,7 @@ class MailClient:
         """
         conv_id = self._db.get_conversation_id(message_id)
         if conv_id is None:
-            raise ValueError(f"Message {message_id} not found")
+            raise MessageNotFoundError(message_id)
 
         rows = self._db.get_thread_messages(conv_id)
         messages = [_row_to_message(r) for r in rows]
@@ -154,7 +155,7 @@ class MailClient:
 
         row = self._db.get_message(message_id)
         if row is None:
-            raise ValueError(f"Message {message_id} not found")
+            raise MessageNotFoundError(message_id)
 
         body = as_body(
             message_id=message_id,
@@ -232,7 +233,7 @@ class MailClient:
                     sender=msg.sender,
                 )
                 lines.append(body)
-            except RuntimeError:
+            except MailError:
                 lines.append("*(message body unavailable)*")
             lines.append("")
 
@@ -341,7 +342,7 @@ class MailClient:
                     target_account=account,
                 )
                 count += 1
-            except RuntimeError:
+            except MailError:
                 pass  # skip messages that can't be found
         return count
 
@@ -354,7 +355,7 @@ class MailClient:
             try:
                 as_mark(**self._msg_context(mid), read=read)
                 count += 1
-            except RuntimeError:
+            except MailError:
                 pass
         return count
 

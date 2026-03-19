@@ -3,6 +3,7 @@
 import subprocess
 
 from apple_mail.client import MailClient
+from apple_mail.errors import MessageNotFoundError
 
 
 def test_get_thread(mail_db):
@@ -35,7 +36,7 @@ def test_get_thread_not_found(mail_db):
     try:
         client.get_thread(999)
         assert False, "Should have raised"
-    except ValueError:
+    except MessageNotFoundError:
         pass
 
 
@@ -68,7 +69,7 @@ def test_export_message_not_found(mail_db):
     try:
         client.export_message(999)
         assert False, "Should have raised"
-    except ValueError:
+    except MessageNotFoundError:
         pass
 
 

@@ -9,19 +9,24 @@ description: Use when the user asks to check their email, triage their inbox, ge
 
 Generate a structured briefing of the user's unread email, organized by priority. The goal is to reduce time spent in the inbox — summarize, categorize, then act on command.
 
+**Run CLI via the launcher:**
+```bash
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail [--json] [--limit N] <command> [flags]
+```
+
 ## Workflow
 
 ### 1. Fetch Unread
 
-**Note:** Global flags (`--json`, `--limit`) go BEFORE the subcommand.
+Global flags (`--json`, `--limit`) go BEFORE the subcommand.
 
 ```bash
-apple-mail --json --limit 50 unread
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json --limit 50 unread
 ```
 
 Or for a specific timeframe:
 ```bash
-apple-mail --json --limit 50 search --unread --days 1
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json --limit 50 search --unread --days 1
 ```
 
 ### 2. Categorize
@@ -38,7 +43,7 @@ For each message, classify based on subject, sender, and snippet:
 
 For messages where the snippet is empty and subject/sender aren't enough to categorize, fetch the body:
 ```bash
-apple-mail --json body <id>
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json body <id>
 ```
 
 ### 3. Present Briefing
@@ -70,14 +75,15 @@ Present as a structured summary grouped by category:
 
 Wait for user instructions. Common actions:
 
-| User says | Action |
-|-----------|--------|
-| "Archive the newsletters" | `apple-mail --json archive <id>` for each |
-| "Mark notifications as read" | `apple-mail --json mark-read <id>` for each |
-| "Reply to Alice saying I'll sign it today" | `apple-mail --json draft --to "alice@..." --subject "Re: Contract..." --body "..."` |
-| "Flag Bob's email" | `apple-mail --json flag <id>` |
-| "Show me the full thread with Carol" | `apple-mail --json thread <id>` |
-| "Read Alice's email" | `apple-mail --json body <id>` |
+| User says | Command |
+|-----------|---------|
+| "Archive the newsletters" | `archive <id>` for each |
+| "Mark notifications as read" | `mark-read <id>` for each |
+| "Reply to Alice saying I'll sign it today" | `draft --to "alice@..." --subject "Re: ..." --body "..."` |
+| "Flag Bob's email" | `flag <id>` |
+| "Show me the full thread with Carol" | `thread <id>` |
+| "Read Alice's email" | `body <id>` |
+| "Save the attachments" | `save-attachments <id> -o ~/Downloads/` |
 
 ## Safety
 

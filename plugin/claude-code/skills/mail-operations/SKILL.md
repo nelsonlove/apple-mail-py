@@ -5,27 +5,26 @@ description: Use when the user asks about their email, wants to search mail, rea
 
 # Apple Mail Operations
 
-**IMPORTANT:** If `apple-mail` is not on PATH, use `uv run --directory ~/repos/apple-mail-py apple-mail` instead.
-
-Global flags (`--json`, `--limit`, `--db`, `--copy`) go BEFORE the subcommand. Subcommand flags go after.
-
-```
-apple-mail [--json] [--limit N] [--db PATH] [--copy] <command> [command-flags]
+**Run CLI via the launcher:**
+```bash
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail [--json] [--limit N] <command> [flags]
 ```
 
-## CLI Commands (preferred — use `--json` for structured output)
+Global flags (`--json`, `--limit`, `--db`, `--copy`) go BEFORE the subcommand.
+
+## CLI Commands (use `--json` for structured output)
 
 ### Search & Read
 ```bash
-apple-mail --json search --subject "invoice" --sender "alice" --days 7
-apple-mail --json subject "meeting notes"
-apple-mail --json sender "bob@example.com"
-apple-mail --json to "carol@example.com"
-apple-mail --json unread
-apple-mail --json recent 3                    # last 3 days
-apple-mail --json --limit 50 search --unread --days 1  # combine global + subcommand flags
-apple-mail --json body 12345                  # full body of message ID
-apple-mail --json thread 12345                # all messages in conversation
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json search --subject "invoice" --sender "alice" --days 7
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json subject "meeting notes"
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json sender "bob@example.com"
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json to "carol@example.com"
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json unread
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json recent 3
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json --limit 50 search --unread --days 1
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json body 12345
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json thread 12345
 ```
 
 ### Search Filters
@@ -34,43 +33,42 @@ apple-mail --json thread 12345                # all messages in conversation
 - `--days N` — lookback window
 - `--has-attachment` — only messages with attachments
 - `--attachment-type pdf` — filter by extension
-- `-n 50` — max results (default: 20)
+- `--limit 50` — max results (default: 20)
 
 ### Write Operations
 ```bash
-apple-mail --json mark-read 12345             # mark as read
-apple-mail --json mark-read 12345 --unread    # mark as unread
-apple-mail --json flag 12345                  # flag message
-apple-mail --json flag 12345 --remove         # unflag
-apple-mail --json archive 12345               # move to Archive
-apple-mail --json draft --to "a@b.com" --subject "Re: Hello" --body "Thanks!"
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json mark-read 12345
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json mark-read 12345 --unread
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json flag 12345
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json flag 12345 --remove
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json archive 12345
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json draft --to "a@b.com" --subject "Re: Hello" --body "Thanks!"
 ```
 
 All write operations support `--dry-run` to preview without executing.
 
 ### Attachments
 ```bash
-apple-mail --json attachments 12345           # list attachments for a message
-apple-mail --json save-attachments 12345 -o ./downloads/  # save to directory
-apple-mail save-attachments 12345 --dry-run   # preview what would be saved
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json attachments 12345
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json save-attachments 12345 -o ./downloads/
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail save-attachments 12345 --dry-run
 ```
 
 ### Export
 ```bash
-apple-mail --json export 12345                # single message as markdown
-apple-mail --json export 12345 --thread       # full thread as markdown
-apple-mail export 12345 -o message.md         # save to file
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json export 12345
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json export 12345 --thread
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail export 12345 -o message.md
 ```
 
 ### Info
 ```bash
-apple-mail --json stats                       # total, unread, deleted counts
-apple-mail --json mailboxes                   # list all mailboxes
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json stats
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json mailboxes
 ```
 
 ## JSON Output Envelope
 
-All `--json` output follows the standard envelope:
 ```json
 {"status": "ok", "data": { ... }}
 {"status": "error", "error": {"code": "...", "message": "..."}}
@@ -84,14 +82,16 @@ The `snippet` field contains message preview text when available (~14% of messag
 
 ## Usage Patterns
 
-**"What emails do I have?"** — Use `apple-mail --json unread` or `apple-mail --json recent 1`.
+**"What emails do I have?"** — `unread` or `recent 1`
 
-**"Any email from Alice?"** — Use `apple-mail --json sender "alice"`.
+**"Any email from Alice?"** — `sender "alice"`
 
-**"Read that email"** — Use `apple-mail --json body <id>` to get the full text.
+**"Read that email"** — `body <id>`
 
-**"What's the full conversation?"** — Use `apple-mail --json thread <id>` to see all messages in the thread, then `apple-mail --json export <id> --thread` for a readable markdown document.
+**"What's the full conversation?"** — `thread <id>`, then `export <id> --thread` for readable markdown
 
-**"Archive those newsletters"** — Use `apple-mail --json archive <id>` for each. No delete — archive only.
+**"Archive those newsletters"** — `archive <id>` for each. No delete — archive only.
 
-**"Reply to Bob saying I'll be there"** — Use `apple-mail --json draft --to "bob@example.com" --subject "Re: Meeting" --body "I'll be there."`. This saves to Drafts — user reviews and sends manually.
+**"Reply to Bob saying I'll be there"** — `draft --to "bob@example.com" --subject "Re: Meeting" --body "I'll be there."` — saves to Drafts, user sends manually.
+
+**"Save the attachments from that email"** — `save-attachments <id> -o ~/Downloads/`

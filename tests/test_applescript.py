@@ -12,6 +12,7 @@ from apple_mail.applescript import (
     open_message,
     set_flagged,
 )
+from apple_mail.errors import MessageNotFoundError
 
 
 def test_escape_applescript():
@@ -57,8 +58,8 @@ def test_get_body_not_found(monkeypatch):
     try:
         get_message_body(message_id=42, subject="Hello", sender="a@b.com")
         assert False, "Should have raised"
-    except RuntimeError as e:
-        assert "not found" in str(e).lower()
+    except MessageNotFoundError as e:
+        assert e.message_id == 42
 
 
 def test_mark_read(monkeypatch):
