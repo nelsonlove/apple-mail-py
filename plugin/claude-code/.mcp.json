@@ -1,0 +1,7 @@
+{
+  "apple-mail": {
+    "type": "stdio",
+    "command": "python3",
+    "args": ["-m", "apple_mail.server"]
+  }
+}
