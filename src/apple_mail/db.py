@@ -187,7 +187,11 @@ class MailDB:
         FROM messages
         """
         rows = self._query(sql)
-        return rows[0] if rows else {"total": 0, "unread": 0, "deleted": 0, "with_attachments": 0}
+        return (
+            rows[0]
+            if rows
+            else {"total": 0, "unread": 0, "deleted": 0, "with_attachments": 0}
+        )
 
     def mailboxes(self) -> list[dict[str, Any]]:
         sql = """

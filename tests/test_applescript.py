@@ -36,7 +36,9 @@ def test_open_message_calls_osascript(monkeypatch):
 
 def test_get_body_returns_content(monkeypatch):
     def mock_run(cmd, **kwargs):
-        return subprocess.CompletedProcess(cmd, 0, stdout="Email body text\n", stderr="")
+        return subprocess.CompletedProcess(
+            cmd, 0, stdout="Email body text\n", stderr=""
+        )
 
     monkeypatch.setattr(subprocess, "run", mock_run)
     body = get_message_body(message_id=42, subject="Hello", sender="a@b.com")

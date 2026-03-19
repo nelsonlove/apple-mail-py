@@ -32,9 +32,14 @@ def search_messages(
     """Search Apple Mail messages with optional filters."""
     try:
         messages = client.search(
-            subject=subject, sender=sender, from_name=from_name,
-            to=to, unread=unread, days=days,
-            has_attachment=has_attachment, limit=limit,
+            subject=subject,
+            sender=sender,
+            from_name=from_name,
+            to=to,
+            unread=unread,
+            days=days,
+            has_attachment=has_attachment,
+            limit=limit,
         )
         return [asdict(m) for m in messages]
     except Exception as exc:

@@ -7,9 +7,15 @@ from apple_mail.models import Mailbox, Message, MessageBody, Stats
 
 def test_message_defaults():
     msg = Message(
-        id=1, subject="Hello", sender="a@b.com", sender_name="A",
-        date="2026-01-01T00:00:00", mailbox="Inbox", read=False,
-        flagged=False, has_attachments=False,
+        id=1,
+        subject="Hello",
+        sender="a@b.com",
+        sender_name="A",
+        date="2026-01-01T00:00:00",
+        mailbox="Inbox",
+        read=False,
+        flagged=False,
+        has_attachments=False,
     )
     assert msg.recipients == []
     d = asdict(msg)

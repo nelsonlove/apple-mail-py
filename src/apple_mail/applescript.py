@@ -43,10 +43,10 @@ def _build_lookup_script(
     safe_subject = _escape_applescript(subject or "")
     safe_sender = _escape_applescript(sender or "")
 
-    action = 'return content of foundMsg' if mode == "content" else (
-        'set visible of foundMsg to true\n'
-        'activate\n'
-        'return "OK"'
+    action = (
+        "return content of foundMsg"
+        if mode == "content"
+        else ('set visible of foundMsg to true\nactivate\nreturn "OK"')
     )
 
     script = f'''
@@ -100,7 +100,10 @@ def open_message(
 ) -> None:
     """Open a message in Mail.app."""
     script = _build_lookup_script(
-        message_id=message_id, subject=subject, sender=sender, mode="open",
+        message_id=message_id,
+        subject=subject,
+        sender=sender,
+        mode="open",
     )
     result = _run_applescript(script)
     if result == _NOT_FOUND:
@@ -115,7 +118,10 @@ def get_message_body(
 ) -> str:
     """Get the full body text of a message via AppleScript."""
     script = _build_lookup_script(
-        message_id=message_id, subject=subject, sender=sender, mode="content",
+        message_id=message_id,
+        subject=subject,
+        sender=sender,
+        mode="content",
     )
     result = _run_applescript(script)
     if result == _NOT_FOUND:

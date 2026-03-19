@@ -14,16 +14,30 @@ from apple_mail.client import MailClient
 
 
 @click.group()
-@click.option("--json", "as_json", is_flag=True, envvar="APPLE_MAIL_OUTPUT",
-              help="Output as JSON (structured envelope).")
-@click.option("--csv", "as_csv", is_flag=True,
-              help="Output as CSV.")
-@click.option("--db", "db_path", default=None, envvar="MAIL_DB",
-              help="Path to Envelope Index database.")
-@click.option("--copy", "copy_mode", is_flag=True,
-              help="Copy database to temp file before reading (avoids lock contention).")
-@click.option("-n", "--limit", default=20, type=int,
-              help="Max results to return (default: 20).")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    envvar="APPLE_MAIL_OUTPUT",
+    help="Output as JSON (structured envelope).",
+)
+@click.option("--csv", "as_csv", is_flag=True, help="Output as CSV.")
+@click.option(
+    "--db",
+    "db_path",
+    default=None,
+    envvar="MAIL_DB",
+    help="Path to Envelope Index database.",
+)
+@click.option(
+    "--copy",
+    "copy_mode",
+    is_flag=True,
+    help="Copy database to temp file before reading (avoids lock contention).",
+)
+@click.option(
+    "-n", "--limit", default=20, type=int, help="Max results to return (default: 20)."
+)
 @click.pass_context
 def cli(ctx, as_json, as_csv, db_path, copy_mode, limit):
     """Read and search Apple Mail from the command line."""
@@ -58,7 +72,9 @@ def _emit(ctx, data):
 def _emit_error(code: str, message: str):
     """Emit structured JSON error envelope."""
     click.echo(
-        json.dumps({"status": "error", "error": {"code": code, "message": message}}, indent=2),
+        json.dumps(
+            {"status": "error", "error": {"code": code, "message": message}}, indent=2
+        ),
         err=True,
     )
     sys.exit(1)
@@ -84,7 +100,9 @@ def _emit_messages(ctx, messages):
         flag = "*" if m.flagged else " "
         read = " " if m.read else "●"
         date = m.date[:16] if len(m.date) > 16 else m.date
-        click.echo(f" {read}{flag} {m.id:>6}  {date}  {m.sender:<30.30}  {m.subject:<50.50}  {m.mailbox}")
+        click.echo(
+            f" {read}{flag} {m.id:>6}  {date}  {m.sender:<30.30}  {m.subject:<50.50}  {m.mailbox}"
+        )
 
 
 def _write_csv(data: list[dict], fields: list[str]):
@@ -98,30 +116,58 @@ def _write_csv(data: list[dict], fields: list[str]):
 
 # ── search ─────────────────────────────────────────────────────────────────
 
+
 @cli.command("search")
 @click.option("--subject", default=None, help="Match subject line.")
 @click.option("--sender", default=None, help="Match sender email.")
 @click.option("--from-name", default=None, help="Match sender display name.")
 @click.option("--to", default=None, help="Match recipient.")
 @click.option("--unread", is_flag=True, default=False, help="Only unread messages.")
-@click.option("--read", "only_read", is_flag=True, default=False, help="Only read messages.")
+@click.option(
+    "--read", "only_read", is_flag=True, default=False, help="Only read messages."
+)
 @click.option("--days", default=None, type=int, help="Lookback window in days.")
-@click.option("--has-attachment", is_flag=True, default=False, help="Only messages with attachments.")
-@click.option("--attachment-type", default=None, help="Filter by attachment extension (e.g. pdf).")
+@click.option(
+    "--has-attachment",
+    is_flag=True,
+    default=False,
+    help="Only messages with attachments.",
+)
+@click.option(
+    "--attachment-type", default=None, help="Filter by attachment extension (e.g. pdf)."
+)
 @click.pass_context
-def search_cmd(ctx, subject, sender, from_name, to, unread, only_read, days, has_attachment, attachment_type):
+def search_cmd(
+    ctx,
+    subject,
+    sender,
+    from_name,
+    to,
+    unread,
+    only_read,
+    days,
+    has_attachment,
+    attachment_type,
+):
     """Search messages with filters."""
     client = _client(ctx)
     unread_filter = True if unread else (False if only_read else None)
     messages = client.search(
-        subject=subject, sender=sender, from_name=from_name, to=to,
-        unread=unread_filter, days=days, has_attachment=has_attachment,
-        attachment_type=attachment_type, limit=_limit(ctx),
+        subject=subject,
+        sender=sender,
+        from_name=from_name,
+        to=to,
+        unread=unread_filter,
+        days=days,
+        has_attachment=has_attachment,
+        attachment_type=attachment_type,
+        limit=_limit(ctx),
     )
     _emit_messages(ctx, messages)
 
 
 # ── shortcuts ──────────────────────────────────────────────────────────────
+
 
 @cli.command("subject")
 @click.argument("pattern")
@@ -174,6 +220,7 @@ def recent_cmd(ctx, days):
 
 # ── message operations ─────────────────────────────────────────────────────
 
+
 @cli.command("open")
 @click.argument("id", type=int)
 @click.pass_context
@@ -216,6 +263,7 @@ def body_cmd(ctx, id):
 
 # ── stats ──────────────────────────────────────────────────────────────────
 
+
 @cli.command("stats")
 @click.pass_context
 def stats_cmd(ctx):
@@ -238,6 +286,7 @@ def stats_cmd(ctx):
 
 
 # ── mailboxes ──────────────────────────────────────────────────────────────
+
 
 @cli.command("mailboxes")
 @click.pass_context

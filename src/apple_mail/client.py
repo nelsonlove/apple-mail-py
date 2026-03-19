@@ -38,9 +38,15 @@ class MailClient:
     ) -> list[Message]:
         """Search messages with optional filters."""
         rows = self._db.search(
-            subject=subject, sender=sender, from_name=from_name, to=to,
-            unread=unread, days=days, has_attachment=has_attachment,
-            attachment_type=attachment_type, limit=limit,
+            subject=subject,
+            sender=sender,
+            from_name=from_name,
+            to=to,
+            unread=unread,
+            days=days,
+            has_attachment=has_attachment,
+            attachment_type=attachment_type,
+            limit=limit,
         )
         return [_row_to_message(r) for r in rows]
 
