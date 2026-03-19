@@ -18,6 +18,7 @@ class Message:
     read: bool
     flagged: bool
     has_attachments: bool
+    conversation_id: int = 0
     recipients: list[str] = field(default_factory=list)
 
 
@@ -49,3 +50,16 @@ class MessageBody:
     subject: str
     sender: str
     body: str
+
+
+@dataclass
+class Thread:
+    """A conversation thread (group of related messages)."""
+
+    conversation_id: int
+    subject: str
+    participants: list[str] = field(default_factory=list)
+    message_count: int = 0
+    date_start: str = ""
+    date_end: str = ""
+    messages: list[Message] = field(default_factory=list)

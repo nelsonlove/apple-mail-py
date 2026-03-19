@@ -261,6 +261,75 @@ def body_cmd(ctx, id):
             sys.exit(1)
 
 
+# ── thread ─────────────────────────────────────────────────────────────────
+
+
+@cli.command("thread")
+@click.argument("id", type=int)
+@click.pass_context
+def thread_cmd(ctx, id):
+    """Show all messages in a conversation thread."""
+    client = _client(ctx)
+    try:
+        thread = client.get_thread(id)
+    except ValueError as e:
+        if _output_json(ctx):
+            _emit_error("not_found", str(e))
+        else:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+
+    if _output_json(ctx):
+        _emit(ctx, asdict(thread))
+        return
+
+    click.echo(f"Thread: {thread.subject}")
+    click.echo(f"Messages: {thread.message_count}")
+    click.echo(f"Participants: {', '.join(thread.participants)}")
+    click.echo(f"Date range: {thread.date_start} to {thread.date_end}")
+    click.echo()
+
+    for m in thread.messages:
+        read = " " if m.read else "●"
+        click.echo(f"  {read} {m.id:>6}  {m.date[:16]}  {m.sender:<30.30}  {m.subject}")
+
+
+# ── export ─────────────────────────────────────────────────────────────────
+
+
+@cli.command("export")
+@click.argument("id", type=int)
+@click.option("--thread", is_flag=True, help="Export the full conversation thread.")
+@click.option("-o", "--output", default=None, help="Write to file instead of stdout.")
+@click.pass_context
+def export_cmd(ctx, id, thread, output):
+    """Export a message (or thread) as markdown."""
+    client = _client(ctx)
+    try:
+        if thread:
+            md = client.export_thread(id)
+        else:
+            md = client.export_message(id)
+    except (ValueError, RuntimeError) as e:
+        if _output_json(ctx):
+            _emit_error("not_found", str(e))
+        else:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+
+    if _output_json(ctx):
+        _emit(ctx, {"markdown": md, "thread": thread, "message_id": id})
+        return
+
+    if output:
+        from pathlib import Path
+
+        Path(output).write_text(md, encoding="utf-8")
+        click.echo(f"Exported to {output}")
+    else:
+        click.echo(md)
+
+
 # ── stats ──────────────────────────────────────────────────────────────────
 
 

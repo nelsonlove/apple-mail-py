@@ -101,6 +101,36 @@ def open_message(message_id: int) -> dict:
         return {"error": str(exc)}
 
 
+@mcp.tool()
+def get_thread(message_id: int) -> dict:
+    """Get all messages in a conversation thread containing the given message."""
+    try:
+        thread = client.get_thread(message_id)
+        return asdict(thread)
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def export_message(message_id: int) -> dict:
+    """Export a single message as markdown with YAML frontmatter."""
+    try:
+        md = client.export_message(message_id)
+        return {"markdown": md, "message_id": message_id}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def export_thread(message_id: int) -> dict:
+    """Export a full conversation thread as a single markdown document."""
+    try:
+        md = client.export_thread(message_id)
+        return {"markdown": md, "message_id": message_id}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
 def main():
     mcp.run(transport="stdio")
 

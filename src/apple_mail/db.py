@@ -122,7 +122,8 @@ class MailDB:
             mb.url AS mailbox_url,
             m.read,
             COALESCE(m.flagged, 0) AS flagged,
-            EXISTS(SELECT 1 FROM attachments att2 WHERE att2.message_id = m.ROWID) AS has_attachments
+            EXISTS(SELECT 1 FROM attachments att2 WHERE att2.message_id = m.ROWID) AS has_attachments,
+            COALESCE(m.conversation_id, 0) AS conversation_id
         FROM messages m
         LEFT JOIN subjects s ON m.subject = s.ROWID
         LEFT JOIN addresses a ON m.sender = a.ROWID
@@ -161,7 +162,8 @@ class MailDB:
             mb.url AS mailbox_url,
             m.read,
             COALESCE(m.flagged, 0) AS flagged,
-            EXISTS(SELECT 1 FROM attachments att WHERE att.message_id = m.ROWID) AS has_attachments
+            EXISTS(SELECT 1 FROM attachments att WHERE att.message_id = m.ROWID) AS has_attachments,
+            COALESCE(m.conversation_id, 0) AS conversation_id
         FROM messages m
         LEFT JOIN subjects s ON m.subject = s.ROWID
         LEFT JOIN addresses a ON m.sender = a.ROWID
@@ -203,6 +205,44 @@ class MailDB:
         for row in rows:
             row["name"] = _friendly_mailbox(row["path"])
             row["account"] = _extract_account(row["path"])
+        return rows
+
+    def get_conversation_id(self, message_id: int) -> int | None:
+        """Get the conversation_id for a message."""
+        sql = """
+        SELECT conversation_id FROM messages
+        WHERE ROWID = ? AND deleted = 0
+        """
+        rows = self._query(sql, (message_id,))
+        if not rows:
+            return None
+        return rows[0]["conversation_id"]
+
+    def get_thread_messages(self, conversation_id: int) -> list[dict[str, Any]]:
+        """Get all messages in a thread, ordered chronologically."""
+        sql = """
+        SELECT
+            m.ROWID AS id,
+            s.subject,
+            a.address AS sender,
+            COALESCE(a.comment, '') AS sender_name,
+            datetime(m.date_sent, 'unixepoch', 'localtime') AS date,
+            mb.url AS mailbox_url,
+            m.read,
+            COALESCE(m.flagged, 0) AS flagged,
+            EXISTS(SELECT 1 FROM attachments att WHERE att.message_id = m.ROWID) AS has_attachments,
+            COALESCE(m.conversation_id, 0) AS conversation_id
+        FROM messages m
+        LEFT JOIN subjects s ON m.subject = s.ROWID
+        LEFT JOIN addresses a ON m.sender = a.ROWID
+        LEFT JOIN mailboxes mb ON m.mailbox = mb.ROWID
+        WHERE m.conversation_id = ? AND m.deleted = 0
+        ORDER BY m.date_sent ASC
+        """
+        rows = self._query(sql, (conversation_id,))
+        for row in rows:
+            row["mailbox"] = _friendly_mailbox(row.pop("mailbox_url", None))
+            row["recipients"] = self._get_recipients(row["id"])
         return rows
 
 
