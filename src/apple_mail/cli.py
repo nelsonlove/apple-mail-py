@@ -261,6 +261,90 @@ def body_cmd(ctx, id):
             sys.exit(1)
 
 
+# ── attachments ────────────────────────────────────────────────────────────
+
+
+@cli.command("attachments")
+@click.argument("id", type=int)
+@click.pass_context
+def attachments_cmd(ctx, id):
+    """List attachments for a message."""
+    client = _client(ctx)
+    atts = client.get_attachments(id)
+
+    if _output_json(ctx):
+        _emit(ctx, [asdict(a) for a in atts])
+        return
+
+    if not atts:
+        click.echo("No attachments.")
+        return
+
+    for a in atts:
+        click.echo(f"  {a.name}")
+
+
+@cli.command("save-attachments")
+@click.argument("id", type=int)
+@click.option(
+    "-o",
+    "--output",
+    default=".",
+    type=click.Path(file_okay=False),
+    help="Directory to save attachments to (default: current directory).",
+)
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without doing it."
+)
+@click.pass_context
+def save_attachments_cmd(ctx, id, output, dry_run):
+    """Save all attachments from a message to a directory."""
+    if dry_run:
+        client = _client(ctx)
+        atts = client.get_attachments(id)
+        names = [a.name for a in atts]
+        if _output_json(ctx):
+            _emit(
+                ctx,
+                {
+                    "action": "save_attachments",
+                    "message_id": id,
+                    "output": output,
+                    "files": names,
+                    "dry_run": True,
+                },
+            )
+        else:
+            if not names:
+                click.echo("No attachments to save.")
+            else:
+                for n in names:
+                    click.echo(f"  Would save: {n}")
+        return
+
+    from pathlib import Path
+
+    Path(output).mkdir(parents=True, exist_ok=True)
+
+    client = _client(ctx)
+    try:
+        saved = client.save_attachments(id, str(Path(output).resolve()))
+        if _output_json(ctx):
+            _emit(ctx, {"message_id": id, "saved": saved, "output": output})
+        else:
+            if not saved:
+                click.echo("No attachments saved.")
+            else:
+                for name in saved:
+                    click.echo(f"  Saved: {name}")
+    except RuntimeError as e:
+        if _output_json(ctx):
+            _emit_error("error", str(e))
+        else:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+
+
 # ── thread ─────────────────────────────────────────────────────────────────
 
 

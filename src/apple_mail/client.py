@@ -7,7 +7,7 @@ All methods return data classes, never raw dicts.
 from __future__ import annotations
 
 from .db import MailDB
-from .models import Mailbox, Message, MessageBody, Stats, Thread
+from .models import Attachment, Mailbox, Message, MessageBody, Stats, Thread
 
 
 class MailClient:
@@ -80,6 +80,31 @@ class MailClient:
             )
             for r in rows
         ]
+
+    # ── Attachment operations ────────────────────────────────────────────
+
+    def get_attachments(self, message_id: int) -> list[Attachment]:
+        """List attachments for a message."""
+        rows = self._db.get_attachments(message_id)
+        return [
+            Attachment(id=r["id"], message_id=r["message_id"], name=r["name"])
+            for r in rows
+        ]
+
+    def save_attachments(self, message_id: int, output_dir: str) -> list[str]:
+        """Save all attachments from a message to a directory.
+
+        Returns list of saved filenames.
+        """
+        from .applescript import save_attachments as as_save
+
+        ctx = self._msg_context(message_id)
+        return as_save(
+            message_id=message_id,
+            output_dir=output_dir,
+            subject=ctx["subject"],
+            sender=ctx["sender"],
+        )
 
     # ── Thread operations ──────────────────────────────────────────────
 

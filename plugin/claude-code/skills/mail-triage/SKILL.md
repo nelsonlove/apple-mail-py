@@ -13,13 +13,15 @@ Generate a structured briefing of the user's unread email, organized by priority
 
 ### 1. Fetch Unread
 
+**Note:** Global flags (`--json`, `--limit`) go BEFORE the subcommand.
+
 ```bash
-apple-mail --json unread -n 50
+apple-mail --json --limit 50 unread
 ```
 
 Or for a specific timeframe:
 ```bash
-apple-mail --json search --unread --days 1 -n 50
+apple-mail --json --limit 50 search --unread --days 1
 ```
 
 ### 2. Categorize

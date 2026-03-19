@@ -5,6 +5,12 @@ description: Use when the user asks about their email, wants to search mail, rea
 
 # Apple Mail Operations
 
+**IMPORTANT:** Global flags (`--json`, `--limit`, `--db`, `--copy`) go BEFORE the subcommand. Subcommand flags go after.
+
+```
+apple-mail [--json] [--limit N] [--db PATH] [--copy] <command> [command-flags]
+```
+
 ## CLI Commands (preferred — use `--json` for structured output)
 
 ### Search & Read
@@ -15,6 +21,7 @@ apple-mail --json sender "bob@example.com"
 apple-mail --json to "carol@example.com"
 apple-mail --json unread
 apple-mail --json recent 3                    # last 3 days
+apple-mail --json --limit 50 search --unread --days 1  # combine global + subcommand flags
 apple-mail --json body 12345                  # full body of message ID
 apple-mail --json thread 12345                # all messages in conversation
 ```
@@ -38,6 +45,13 @@ apple-mail --json draft --to "a@b.com" --subject "Re: Hello" --body "Thanks!"
 ```
 
 All write operations support `--dry-run` to preview without executing.
+
+### Attachments
+```bash
+apple-mail --json attachments 12345           # list attachments for a message
+apple-mail --json save-attachments 12345 -o ./downloads/  # save to directory
+apple-mail save-attachments 12345 --dry-run   # preview what would be saved
+```
 
 ### Export
 ```bash

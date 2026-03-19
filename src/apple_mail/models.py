@@ -54,6 +54,15 @@ class MessageBody:
 
 
 @dataclass
+class Attachment:
+    """An email attachment."""
+
+    id: int
+    message_id: int
+    name: str
+
+
+@dataclass
 class Thread:
     """A conversation thread (group of related messages)."""
 

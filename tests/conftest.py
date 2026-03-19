@@ -44,13 +44,14 @@ def mail_db(tmp_path):
             summary TEXT
         );
         CREATE TABLE recipients (
-            message_id INTEGER REFERENCES messages(ROWID),
-            address_id INTEGER REFERENCES addresses(ROWID),
+            ROWID INTEGER PRIMARY KEY,
+            message INTEGER REFERENCES messages(ROWID),
+            address INTEGER REFERENCES addresses(ROWID),
             type INTEGER DEFAULT 0
         );
         CREATE TABLE attachments (
             ROWID INTEGER PRIMARY KEY,
-            message_id INTEGER REFERENCES messages(ROWID),
+            message INTEGER REFERENCES messages(ROWID),
             name TEXT
         );
 
@@ -76,11 +77,12 @@ def mail_db(tmp_path):
         INSERT INTO messages VALUES (3, 3, 3, 1742227200, 1742227200, 0, 1, 0, 2, 200, NULL);
         INSERT INTO messages VALUES (4, 1, 1, 1742140800, 1742140800, 0, 0, 1, 1, 100, NULL);
 
-        INSERT INTO recipients VALUES (1, 2, 0);
-        INSERT INTO recipients VALUES (2, 3, 0);
-        INSERT INTO recipients VALUES (3, 1, 0);
+        INSERT INTO recipients VALUES (1, 1, 2, 0);
+        INSERT INTO recipients VALUES (2, 2, 3, 0);
+        INSERT INTO recipients VALUES (3, 3, 1, 0);
 
         INSERT INTO attachments VALUES (1, 3, 'report.pdf');
+        INSERT INTO attachments VALUES (2, 3, 'notes.docx');
     """)
     conn.commit()
     conn.close()

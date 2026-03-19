@@ -282,3 +282,47 @@ tell application "Mail"
 end tell
 '''
     _run_applescript(script)
+
+
+def save_attachments(
+    *,
+    message_id: int,
+    output_dir: str,
+    subject: str | None = None,
+    sender: str | None = None,
+) -> list[str]:
+    """Save all attachments from a message to a directory.
+
+    Args:
+        message_id: Message ROWID.
+        output_dir: Directory to save attachments to.
+        subject: For fallback message lookup.
+        sender: For fallback message lookup.
+
+    Returns:
+        List of saved filenames.
+    """
+    safe_dir = _escape_applescript(output_dir)
+
+    result = _find_and_act(
+        message_id=message_id,
+        subject=subject,
+        sender=sender,
+        action=f'''
+    set attList to every mail attachment of foundMsg
+    set savedNames to {{}}
+    repeat with att in attList
+        set attName to name of att
+        set savePath to "{safe_dir}/" & attName
+        try
+            save att in POSIX file savePath
+            set end of savedNames to attName
+        end try
+    end repeat
+    set AppleScript's text item delimiters to "||"
+    return savedNames as text
+''',
+    )
+    if not result:
+        return []
+    return [name for name in result.split("||") if name]

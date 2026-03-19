@@ -74,15 +74,15 @@ class MailDB:
 
         if to:
             joins.append(
-                "INNER JOIN recipients r ON r.message_id = m.ROWID "
-                "INNER JOIN addresses ra ON r.address_id = ra.ROWID"
+                "INNER JOIN recipients r ON r.message = m.ROWID "
+                "INNER JOIN addresses ra ON r.address = ra.ROWID"
             )
             conditions.append("(ra.address LIKE ? OR ra.comment LIKE ?)")
             pat = f"%{to}%"
             params.extend([pat, pat])
 
         if has_attachment or attachment_type:
-            joins.append("INNER JOIN attachments att ON att.message_id = m.ROWID")
+            joins.append("INNER JOIN attachments att ON att.message = m.ROWID")
             if attachment_type:
                 conditions.append("att.name LIKE ?")
                 params.append(f"%.{attachment_type}")
@@ -122,7 +122,7 @@ class MailDB:
             mb.url AS mailbox_url,
             m.read,
             COALESCE(m.flagged, 0) AS flagged,
-            EXISTS(SELECT 1 FROM attachments att2 WHERE att2.message_id = m.ROWID) AS has_attachments,
+            EXISTS(SELECT 1 FROM attachments att2 WHERE att2.message = m.ROWID) AS has_attachments,
             COALESCE(m.conversation_id, 0) AS conversation_id,
             COALESCE(sm.summary, '') AS snippet
         FROM messages m
@@ -147,8 +147,8 @@ class MailDB:
         sql = """
         SELECT a.address
         FROM recipients r
-        INNER JOIN addresses a ON r.address_id = a.ROWID
-        WHERE r.message_id = ?
+        INNER JOIN addresses a ON r.address = a.ROWID
+        WHERE r.message = ?
         """
         rows = self._query(sql, (message_id,))
         return [r["address"] for r in rows]
@@ -164,7 +164,7 @@ class MailDB:
             mb.url AS mailbox_url,
             m.read,
             COALESCE(m.flagged, 0) AS flagged,
-            EXISTS(SELECT 1 FROM attachments att WHERE att.message_id = m.ROWID) AS has_attachments,
+            EXISTS(SELECT 1 FROM attachments att WHERE att.message = m.ROWID) AS has_attachments,
             COALESCE(m.conversation_id, 0) AS conversation_id,
             COALESCE(sm.summary, '') AS snippet
         FROM messages m
@@ -189,7 +189,7 @@ class MailDB:
             SUM(CASE WHEN deleted = 0 THEN 1 ELSE 0 END) AS total,
             SUM(CASE WHEN deleted = 0 AND read = 0 THEN 1 ELSE 0 END) AS unread,
             SUM(CASE WHEN deleted = 1 THEN 1 ELSE 0 END) AS deleted,
-            (SELECT COUNT(DISTINCT message_id) FROM attachments) AS with_attachments
+            (SELECT COUNT(DISTINCT message) FROM attachments) AS with_attachments
         FROM messages
         """
         rows = self._query(sql)
@@ -210,6 +210,16 @@ class MailDB:
             row["name"] = _friendly_mailbox(row["path"])
             row["account"] = _extract_account(row["path"])
         return rows
+
+    def get_attachments(self, message_id: int) -> list[dict[str, Any]]:
+        """Get attachments for a message."""
+        sql = """
+        SELECT a.ROWID AS id, a.message AS message_id, a.name
+        FROM attachments a
+        WHERE a.message = ?
+        ORDER BY a.ROWID
+        """
+        return self._query(sql, (message_id,))
 
     def get_conversation_id(self, message_id: int) -> int | None:
         """Get the conversation_id for a message."""
@@ -234,7 +244,7 @@ class MailDB:
             mb.url AS mailbox_url,
             m.read,
             COALESCE(m.flagged, 0) AS flagged,
-            EXISTS(SELECT 1 FROM attachments att WHERE att.message_id = m.ROWID) AS has_attachments,
+            EXISTS(SELECT 1 FROM attachments att WHERE att.message = m.ROWID) AS has_attachments,
             COALESCE(m.conversation_id, 0) AS conversation_id,
             COALESCE(sm.summary, '') AS snippet
         FROM messages m

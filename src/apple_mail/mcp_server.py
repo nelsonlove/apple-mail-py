@@ -92,6 +92,26 @@ def get_message_body(message_id: int) -> dict:
 
 
 @mcp.tool()
+def list_attachments(message_id: int) -> list[dict] | dict:
+    """List attachments for a message."""
+    try:
+        atts = client.get_attachments(message_id)
+        return [asdict(a) for a in atts]
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def save_attachments(message_id: int, output_dir: str) -> dict:
+    """Save all attachments from a message to a directory. Returns list of saved filenames."""
+    try:
+        saved = client.save_attachments(message_id, output_dir)
+        return {"message_id": message_id, "saved": saved, "output_dir": output_dir}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
 def open_message(message_id: int) -> dict:
     """Open a message in Mail.app."""
     try:
