@@ -22,16 +22,16 @@ fix:
     ruff format src tests
 
 type-check:
-    mypy src/clawmail src/apple_mail
+    mypy src/apple_mail_cli src/apple_mail
 
 test:
     pytest -v
 
 test-cov:
-    pytest --cov=clawmail --cov=apple_mail --cov-report=term-missing
+    pytest --cov=apple_mail_cli --cov=apple_mail --cov-report=term-missing
 
 run *ARGS:
-    python -m clawmail.cli {{ARGS}}
+    python -m apple_mail_cli.cli {{ARGS}}
 
 clean:
     rm -rf build/ dist/ *.egg-info/ .pytest_cache/ .mypy_cache/ .ruff_cache/ htmlcov/ .coverage

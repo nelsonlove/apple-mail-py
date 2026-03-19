@@ -13,7 +13,7 @@ src/
 │   ├── db_finder.py         # Auto-detect Mail database location
 │   ├── applescript.py       # AppleScript for open/body operations
 │   └── server.py            # FastMCP server (optional)
-├── clawmail/                # CLI package (consumes apple_mail)
+├── apple_mail_cli/                # CLI package (consumes apple_mail)
 │   └── cli.py               # Click-based commands
 plugin/
   claude-code/               # Claude Code plugin (MCP server)
