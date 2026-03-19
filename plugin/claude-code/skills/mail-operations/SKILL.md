@@ -5,7 +5,9 @@ description: Use when the user asks about their email, wants to search mail, rea
 
 # Apple Mail Operations
 
-**IMPORTANT:** Global flags (`--json`, `--limit`, `--db`, `--copy`) go BEFORE the subcommand. Subcommand flags go after.
+**IMPORTANT:** If `apple-mail` is not on PATH, use `uv run --directory ~/repos/apple-mail-py apple-mail` instead.
+
+Global flags (`--json`, `--limit`, `--db`, `--copy`) go BEFORE the subcommand. Subcommand flags go after.
 
 ```
 apple-mail [--json] [--limit N] [--db PATH] [--copy] <command> [command-flags]
