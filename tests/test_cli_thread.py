@@ -4,7 +4,7 @@ import json
 
 from click.testing import CliRunner
 
-from apple_mail_cli.cli import cli
+from apple_mail.cli import cli
 
 
 def test_thread_json(mail_db):

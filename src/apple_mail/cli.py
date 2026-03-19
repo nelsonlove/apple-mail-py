@@ -10,7 +10,7 @@ from dataclasses import asdict
 
 import click
 
-from apple_mail.client import MailClient
+from .client import MailClient
 
 
 @click.group()
@@ -336,16 +336,26 @@ def export_cmd(ctx, id, thread, output):
 @cli.command("mark-read")
 @click.argument("id", type=int)
 @click.option("--unread", is_flag=True, help="Mark as unread instead of read.")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without doing it."
+)
 @click.pass_context
-def mark_read_cmd(ctx, id, unread):
+def mark_read_cmd(ctx, id, unread, dry_run):
     """Mark a message as read (or --unread)."""
+    action = "unread" if unread else "read"
+    if dry_run:
+        if _output_json(ctx):
+            _emit(ctx, {"action": f"mark_{action}", "message_id": id, "dry_run": True})
+        else:
+            click.echo(f"Would mark message {id} as {action}")
+        return
     client = _client(ctx)
     try:
         client.mark_read(id, read=not unread)
         if _output_json(ctx):
             _emit(ctx, {"message_id": id, "read": not unread})
         else:
-            click.echo(f"Marked message {id} as {'unread' if unread else 'read'}")
+            click.echo(f"Marked message {id} as {action}")
     except RuntimeError as e:
         if _output_json(ctx):
             _emit_error("not_found", str(e))
@@ -357,9 +367,19 @@ def mark_read_cmd(ctx, id, unread):
 @cli.command("flag")
 @click.argument("id", type=int)
 @click.option("--remove", is_flag=True, help="Remove flag instead of adding.")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without doing it."
+)
 @click.pass_context
-def flag_cmd(ctx, id, remove):
+def flag_cmd(ctx, id, remove, dry_run):
     """Flag a message (or --remove to unflag)."""
+    action = "unflag" if remove else "flag"
+    if dry_run:
+        if _output_json(ctx):
+            _emit(ctx, {"action": action, "message_id": id, "dry_run": True})
+        else:
+            click.echo(f"Would {action} message {id}")
+        return
     client = _client(ctx)
     try:
         client.set_flagged(id, flagged=not remove)
@@ -378,9 +398,18 @@ def flag_cmd(ctx, id, remove):
 @cli.command("archive")
 @click.argument("id", type=int)
 @click.option("--account", default=None, help="Target account name.")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without doing it."
+)
 @click.pass_context
-def archive_cmd(ctx, id, account):
+def archive_cmd(ctx, id, account, dry_run):
     """Move a message to Archive."""
+    if dry_run:
+        if _output_json(ctx):
+            _emit(ctx, {"action": "archive", "message_id": id, "dry_run": True})
+        else:
+            click.echo(f"Would archive message {id}")
+        return
     client = _client(ctx)
     try:
         client.archive(id, account=account)
@@ -408,9 +437,28 @@ def archive_cmd(ctx, id, account):
 @click.option("--body", required=True, help="Email body text.")
 @click.option("--cc", "cc_addrs", multiple=True, help="CC address (repeatable).")
 @click.option("--bcc", "bcc_addrs", multiple=True, help="BCC address (repeatable).")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without doing it."
+)
 @click.pass_context
-def draft_cmd(ctx, to_addrs, subject, body, cc_addrs, bcc_addrs):
+def draft_cmd(ctx, to_addrs, subject, body, cc_addrs, bcc_addrs, dry_run):
     """Create a draft email (saved to Drafts, not sent)."""
+    if dry_run:
+        data = {
+            "action": "draft",
+            "to": list(to_addrs),
+            "subject": subject,
+            "dry_run": True,
+        }
+        if cc_addrs:
+            data["cc"] = list(cc_addrs)
+        if bcc_addrs:
+            data["bcc"] = list(bcc_addrs)
+        if _output_json(ctx):
+            _emit(ctx, data)
+        else:
+            click.echo(f'Would create draft: "{subject}" to {", ".join(to_addrs)}')
+        return
     client = _client(ctx)
     try:
         client.create_draft(
