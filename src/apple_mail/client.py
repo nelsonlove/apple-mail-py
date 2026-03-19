@@ -215,35 +215,88 @@ class MailClient:
 
     # ── App interaction (AppleScript) ─────────────────────────────────
 
+    def _msg_context(self, message_id: int) -> dict:
+        """Get lookup context for a message (subject, sender for fallback)."""
+        row = self._db.get_message(message_id)
+        return {
+            "message_id": message_id,
+            "subject": row["subject"] if row else None,
+            "sender": row["sender"] if row else None,
+        }
+
     def open_message(self, message_id: int) -> None:
         """Open a message in Mail.app."""
         from .applescript import open_message as as_open
 
-        row = self._db.get_message(message_id)
-        as_open(
-            message_id=message_id,
-            subject=row["subject"] if row else None,
-            sender=row["sender"] if row else None,
-        )
+        as_open(**self._msg_context(message_id))
 
     def get_body(self, message_id: int) -> MessageBody:
         """Get full message body via AppleScript."""
         from .applescript import get_message_body as as_body
 
-        row = self._db.get_message(message_id)
-        subject = row["subject"] if row else ""
-        sender = row["sender"] if row else ""
-
-        body = as_body(
-            message_id=message_id,
-            subject=subject,
-            sender=sender,
-        )
+        ctx = self._msg_context(message_id)
+        body = as_body(**ctx)
         return MessageBody(
             id=message_id,
-            subject=subject,
-            sender=sender,
+            subject=ctx["subject"] or "",
+            sender=ctx["sender"] or "",
             body=body,
+        )
+
+    # ── Write operations (AppleScript) ────────────────────────────────
+
+    def mark_read(self, message_id: int, *, read: bool = True) -> None:
+        """Mark a message as read or unread."""
+        from .applescript import mark_read as as_mark
+
+        as_mark(**self._msg_context(message_id), read=read)
+
+    def set_flagged(self, message_id: int, *, flagged: bool = True) -> None:
+        """Flag or unflag a message."""
+        from .applescript import set_flagged as as_flag
+
+        as_flag(**self._msg_context(message_id), flagged=flagged)
+
+    def archive(self, message_id: int, *, account: str | None = None) -> None:
+        """Move a message to Archive."""
+        from .applescript import move_message as as_move
+
+        as_move(
+            **self._msg_context(message_id),
+            target_mailbox="Archive",
+            target_account=account,
+        )
+
+    def move_to_mailbox(
+        self, message_id: int, mailbox: str, *, account: str | None = None
+    ) -> None:
+        """Move a message to a specific mailbox."""
+        from .applescript import move_message as as_move
+
+        as_move(
+            **self._msg_context(message_id),
+            target_mailbox=mailbox,
+            target_account=account,
+        )
+
+    def create_draft(
+        self,
+        *,
+        to: list[str],
+        subject: str,
+        body: str,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+    ) -> None:
+        """Create a draft email (saved to Drafts, not sent)."""
+        from .applescript import create_draft as as_draft
+
+        as_draft(
+            to_addresses=to,
+            subject=subject,
+            body=body,
+            cc_addresses=cc,
+            bcc_addresses=bcc,
         )
 
 

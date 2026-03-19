@@ -131,6 +131,62 @@ def export_thread(message_id: int) -> dict:
         return {"error": str(exc)}
 
 
+@mcp.tool()
+def mark_message_read(message_id: int, read: bool = True) -> dict:
+    """Mark a message as read or unread."""
+    try:
+        client.mark_read(message_id, read=read)
+        return {"message_id": message_id, "read": read}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def flag_message(message_id: int, flagged: bool = True) -> dict:
+    """Flag or unflag a message."""
+    try:
+        client.set_flagged(message_id, flagged=flagged)
+        return {"message_id": message_id, "flagged": flagged}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def archive_message(message_id: int, account: str | None = None) -> dict:
+    """Move a message to Archive."""
+    try:
+        client.archive(message_id, account=account)
+        return {"message_id": message_id, "archived": True}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def move_to_mailbox(message_id: int, mailbox: str, account: str | None = None) -> dict:
+    """Move a message to a specific mailbox."""
+    try:
+        client.move_to_mailbox(message_id, mailbox, account=account)
+        return {"message_id": message_id, "mailbox": mailbox}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def draft_reply(
+    to: list[str],
+    subject: str,
+    body: str,
+    cc: list[str] | None = None,
+    bcc: list[str] | None = None,
+) -> dict:
+    """Create a draft email in Mail.app (saved to Drafts, not sent). Use for composing replies or new messages."""
+    try:
+        client.create_draft(to=to, subject=subject, body=body, cc=cc, bcc=bcc)
+        return {"drafted": True, "to": to, "subject": subject}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
 def main():
     mcp.run(transport="stdio")
 

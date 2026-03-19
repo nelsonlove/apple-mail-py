@@ -330,6 +330,108 @@ def export_cmd(ctx, id, thread, output):
         click.echo(md)
 
 
+# ── write operations ───────────────────────────────────────────────────────
+
+
+@cli.command("mark-read")
+@click.argument("id", type=int)
+@click.option("--unread", is_flag=True, help="Mark as unread instead of read.")
+@click.pass_context
+def mark_read_cmd(ctx, id, unread):
+    """Mark a message as read (or --unread)."""
+    client = _client(ctx)
+    try:
+        client.mark_read(id, read=not unread)
+        if _output_json(ctx):
+            _emit(ctx, {"message_id": id, "read": not unread})
+        else:
+            click.echo(f"Marked message {id} as {'unread' if unread else 'read'}")
+    except RuntimeError as e:
+        if _output_json(ctx):
+            _emit_error("not_found", str(e))
+        else:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+
+
+@cli.command("flag")
+@click.argument("id", type=int)
+@click.option("--remove", is_flag=True, help="Remove flag instead of adding.")
+@click.pass_context
+def flag_cmd(ctx, id, remove):
+    """Flag a message (or --remove to unflag)."""
+    client = _client(ctx)
+    try:
+        client.set_flagged(id, flagged=not remove)
+        if _output_json(ctx):
+            _emit(ctx, {"message_id": id, "flagged": not remove})
+        else:
+            click.echo(f"{'Unflagged' if remove else 'Flagged'} message {id}")
+    except RuntimeError as e:
+        if _output_json(ctx):
+            _emit_error("not_found", str(e))
+        else:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+
+
+@cli.command("archive")
+@click.argument("id", type=int)
+@click.option("--account", default=None, help="Target account name.")
+@click.pass_context
+def archive_cmd(ctx, id, account):
+    """Move a message to Archive."""
+    client = _client(ctx)
+    try:
+        client.archive(id, account=account)
+        if _output_json(ctx):
+            _emit(ctx, {"message_id": id, "archived": True})
+        else:
+            click.echo(f"Archived message {id}")
+    except RuntimeError as e:
+        if _output_json(ctx):
+            _emit_error("error", str(e))
+        else:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+
+
+@cli.command("draft")
+@click.option(
+    "--to",
+    "to_addrs",
+    required=True,
+    multiple=True,
+    help="Recipient address (repeatable).",
+)
+@click.option("--subject", required=True, help="Email subject.")
+@click.option("--body", required=True, help="Email body text.")
+@click.option("--cc", "cc_addrs", multiple=True, help="CC address (repeatable).")
+@click.option("--bcc", "bcc_addrs", multiple=True, help="BCC address (repeatable).")
+@click.pass_context
+def draft_cmd(ctx, to_addrs, subject, body, cc_addrs, bcc_addrs):
+    """Create a draft email (saved to Drafts, not sent)."""
+    client = _client(ctx)
+    try:
+        client.create_draft(
+            to=list(to_addrs),
+            subject=subject,
+            body=body,
+            cc=list(cc_addrs) or None,
+            bcc=list(bcc_addrs) or None,
+        )
+        if _output_json(ctx):
+            _emit(ctx, {"drafted": True, "to": list(to_addrs), "subject": subject})
+        else:
+            click.echo(f'Draft created: "{subject}" to {", ".join(to_addrs)}')
+    except RuntimeError as e:
+        if _output_json(ctx):
+            _emit_error("error", str(e))
+        else:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+
+
 # ── stats ──────────────────────────────────────────────────────────────────
 
 

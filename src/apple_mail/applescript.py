@@ -32,22 +32,19 @@ def _run_applescript(script: str) -> str:
     return result.stdout.strip()
 
 
-def _build_lookup_script(
+def _build_action_script(
     *,
     message_id: int,
     subject: str | None = None,
     sender: str | None = None,
-    mode: str = "content",
+    action: str,
 ) -> str:
-    """Build AppleScript to find and act on a message."""
+    """Build AppleScript to find a message and perform an action on it.
+
+    The action string is AppleScript code that can reference `foundMsg`.
+    """
     safe_subject = _escape_applescript(subject or "")
     safe_sender = _escape_applescript(sender or "")
-
-    action = (
-        "return content of foundMsg"
-        if mode == "content"
-        else ('set visible of foundMsg to true\nactivate\nreturn "OK"')
-    )
 
     script = f'''
 tell application "Mail"
@@ -92,6 +89,29 @@ end tell
     return script
 
 
+def _find_and_act(
+    *,
+    message_id: int,
+    subject: str | None = None,
+    sender: str | None = None,
+    action: str,
+) -> str:
+    """Find a message and perform an action. Returns AppleScript result."""
+    script = _build_action_script(
+        message_id=message_id,
+        subject=subject,
+        sender=sender,
+        action=action,
+    )
+    result = _run_applescript(script)
+    if result == _NOT_FOUND:
+        raise RuntimeError(f"Message {message_id} not found in Mail.app")
+    return result
+
+
+# ── Read operations ────────────────────────────────────────────────────
+
+
 def open_message(
     *,
     message_id: int,
@@ -99,15 +119,12 @@ def open_message(
     sender: str | None = None,
 ) -> None:
     """Open a message in Mail.app."""
-    script = _build_lookup_script(
+    _find_and_act(
         message_id=message_id,
         subject=subject,
         sender=sender,
-        mode="open",
+        action='set visible of foundMsg to true\nactivate\nreturn "OK"',
     )
-    result = _run_applescript(script)
-    if result == _NOT_FOUND:
-        raise RuntimeError(f"Message {message_id} not found in Mail.app")
 
 
 def get_message_body(
@@ -117,13 +134,151 @@ def get_message_body(
     sender: str | None = None,
 ) -> str:
     """Get the full body text of a message via AppleScript."""
-    script = _build_lookup_script(
+    return _find_and_act(
         message_id=message_id,
         subject=subject,
         sender=sender,
-        mode="content",
+        action="return content of foundMsg",
     )
-    result = _run_applescript(script)
-    if result == _NOT_FOUND:
-        raise RuntimeError(f"Message {message_id} not found in Mail.app")
-    return result
+
+
+# ── Write operations ────────────────────────────────────────────────────
+
+
+def mark_read(
+    *,
+    message_id: int,
+    subject: str | None = None,
+    sender: str | None = None,
+    read: bool = True,
+) -> None:
+    """Mark a message as read or unread."""
+    value = "true" if read else "false"
+    _find_and_act(
+        message_id=message_id,
+        subject=subject,
+        sender=sender,
+        action=f'set read status of foundMsg to {value}\nreturn "OK"',
+    )
+
+
+def set_flagged(
+    *,
+    message_id: int,
+    subject: str | None = None,
+    sender: str | None = None,
+    flagged: bool = True,
+) -> None:
+    """Flag or unflag a message."""
+    value = "true" if flagged else "false"
+    _find_and_act(
+        message_id=message_id,
+        subject=subject,
+        sender=sender,
+        action=f'set flagged status of foundMsg to {value}\nreturn "OK"',
+    )
+
+
+def move_message(
+    *,
+    message_id: int,
+    target_mailbox: str,
+    target_account: str | None = None,
+    subject: str | None = None,
+    sender: str | None = None,
+) -> None:
+    """Move a message to a different mailbox (e.g. Archive).
+
+    Args:
+        message_id: Message ROWID.
+        target_mailbox: Mailbox name (e.g. "Archive", "INBOX").
+        target_account: Account name. If None, searches all accounts.
+        subject: For fallback lookup.
+        sender: For fallback lookup.
+    """
+    safe_mailbox = _escape_applescript(target_mailbox)
+    if target_account:
+        safe_account = _escape_applescript(target_account)
+        find_target = (
+            f'set targetBox to mailbox "{safe_mailbox}" of account "{safe_account}"'
+        )
+    else:
+        find_target = f"""
+    set targetBox to missing value
+    repeat with acct in every account
+        try
+            set targetBox to mailbox "{safe_mailbox}" of acct
+            exit repeat
+        end try
+    end repeat
+    if targetBox is missing value then
+        error "Mailbox '{safe_mailbox}' not found"
+    end if"""
+
+    action = f"""
+    {find_target}
+    move foundMsg to targetBox
+    return "OK"
+"""
+    _find_and_act(
+        message_id=message_id,
+        subject=subject,
+        sender=sender,
+        action=action,
+    )
+
+
+def create_draft(
+    *,
+    to_addresses: list[str],
+    subject: str,
+    body: str,
+    cc_addresses: list[str] | None = None,
+    bcc_addresses: list[str] | None = None,
+) -> None:
+    """Create a draft message in Mail.app (saved to Drafts, not sent).
+
+    Args:
+        to_addresses: List of recipient email addresses.
+        subject: Email subject line.
+        body: Plain text body.
+        cc_addresses: Optional CC recipients.
+        bcc_addresses: Optional BCC recipients.
+    """
+    safe_subject = _escape_applescript(subject)
+    safe_body = _escape_applescript(body)
+
+    # Build recipient lines
+    to_lines = "\n".join(
+        f"        make new to recipient at end of to recipients with properties "
+        f'{{address:"{_escape_applescript(addr)}"}}'
+        for addr in to_addresses
+    )
+    cc_lines = ""
+    if cc_addresses:
+        cc_lines = "\n".join(
+            f"        make new cc recipient at end of cc recipients with properties "
+            f'{{address:"{_escape_applescript(addr)}"}}'
+            for addr in cc_addresses
+        )
+    bcc_lines = ""
+    if bcc_addresses:
+        bcc_lines = "\n".join(
+            f"        make new bcc recipient at end of bcc recipients with properties "
+            f'{{address:"{_escape_applescript(addr)}"}}'
+            for addr in bcc_addresses
+        )
+
+    script = f'''
+tell application "Mail"
+    set newMsg to make new outgoing message with properties {{subject:"{safe_subject}", content:"{safe_body}", visible:false}}
+    tell newMsg
+{to_lines}
+{cc_lines}
+{bcc_lines}
+    end tell
+    save newMsg
+    return "OK"
+end tell
+'''
+    _run_applescript(script)
