@@ -565,6 +565,49 @@ def draft_cmd(ctx, to_addrs, subject, body, cc_addrs, bcc_addrs, dry_run):
             sys.exit(1)
 
 
+# ── full-text search ───────────────────────────────────────────────────────
+
+
+@cli.command("index")
+@click.option("--force", is_flag=True, help="Drop and rebuild the index from scratch.")
+@click.option(
+    "--status", "show_status", is_flag=True, help="Show index stats and exit."
+)
+@click.pass_context
+def index_cmd(ctx, force, show_status):
+    """Build or update the full-text search index."""
+    client = _client(ctx)
+
+    if show_status:
+        info = client.index_status()
+        if _output_json(ctx):
+            _emit(ctx, info)
+        else:
+            click.echo(f"  Indexed messages: {info['indexed_messages']:,}")
+            click.echo(f"  Index size:       {info['index_size_mb']} MB")
+            click.echo(f"  Index path:       {info['index_path']}")
+        return
+
+    result = client.build_index(force=force, progress=True)
+    if _output_json(ctx):
+        _emit(ctx, result)
+    else:
+        click.echo(f"  Indexed: {result['indexed']:,}")
+        click.echo(f"  Unchanged: {result['skipped']:,}")
+        click.echo(f"  Errors: {result['errors']:,}")
+        click.echo(f"  Total files: {result['total_files']:,}")
+
+
+@cli.command("search-body")
+@click.argument("query")
+@click.pass_context
+def search_body_cmd(ctx, query):
+    """Full-text search over message bodies (requires index)."""
+    client = _client(ctx)
+    messages = client.search_body(query, limit=_limit(ctx))
+    _emit_messages(ctx, messages)
+
+
 # ── stats ──────────────────────────────────────────────────────────────────
 
 

@@ -61,6 +61,16 @@ ${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json export 12345 --thread
 ${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail export 12345 -o message.md
 ```
 
+### Full-Text Body Search
+```bash
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail index                    # build/update the search index (first time: ~45s)
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail index --status           # check index stats
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json search-body "deposition"   # search message bodies
+${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json search-body '"team meeting" AND April'  # FTS5 query syntax
+```
+
+The index must be built before `search-body` works. It parses `.emlx` files from disk into an FTS5 SQLite index at `~/.cache/apple-mail-py/search.db`. Incremental — only indexes new/changed files on subsequent runs.
+
 ### Info
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/bin/run apple-mail --json stats
@@ -95,3 +105,5 @@ The `snippet` field contains message preview text when available (~14% of messag
 **"Reply to Bob saying I'll be there"** — `draft --to "bob@example.com" --subject "Re: Meeting" --body "I'll be there."` — saves to Drafts, user sends manually.
 
 **"Save the attachments from that email"** — `save-attachments <id> -o ~/Downloads/`
+
+**"Find the email about the deposition"** — `search-body "deposition"` (requires index — run `index` first if not built)

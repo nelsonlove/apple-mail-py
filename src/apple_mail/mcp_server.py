@@ -237,6 +237,34 @@ def bulk_mark_read(message_ids: list[int]) -> dict:
         return {"error": str(exc)}
 
 
+@mcp.tool()
+def search_body(query: str, limit: int = 20) -> list[dict] | dict:
+    """Full-text search over message bodies. Requires index (run build_index first). Supports AND, OR, NOT, and quoted phrases."""
+    try:
+        messages = client.search_body(query, limit=limit)
+        return [asdict(m) for m in messages]
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def build_search_index(force: bool = False) -> dict:
+    """Build or update the full-text search index from .emlx files on disk. Run this before using search_body."""
+    try:
+        return client.build_index(force=force)
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def search_index_status() -> dict:
+    """Return full-text search index statistics (message count, size, path)."""
+    try:
+        return client.index_status()
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
 def main():
     mcp.run(transport="stdio")
 

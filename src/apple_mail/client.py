@@ -82,6 +82,58 @@ class MailClient:
             for r in rows
         ]
 
+    # ── Full-text search ───────────────────────────────────────────────
+
+    def build_index(self, *, force: bool = False, progress: bool = False) -> dict:
+        """Build or update the full-text search index from .emlx files.
+
+        Args:
+            force: Drop and rebuild from scratch.
+            progress: Print progress to stderr.
+
+        Returns:
+            Dict with: indexed, skipped, errors, total_files.
+        """
+        from .search_index import SearchIndex
+
+        idx = SearchIndex()
+        return idx.build(force=force, progress=progress)
+
+    def search_body(self, query: str, *, limit: int = 20) -> list[Message]:
+        """Full-text search over message bodies.
+
+        Requires a built index (run build_index first).
+        Results are joined with the Envelope Index for full metadata.
+
+        Args:
+            query: Search query (supports AND, OR, NOT, "phrases").
+            limit: Maximum results.
+
+        Returns:
+            List of Message objects, ordered by relevance.
+        """
+        from .search_index import SearchIndex
+
+        idx = SearchIndex()
+        hits = idx.search(query, limit=limit)
+
+        # Join FTS results with Envelope Index metadata
+        results = []
+        for hit in hits:
+            row = self._db.get_message(hit["message_id"])
+            if row:
+                msg = _row_to_message(row)
+                # Override snippet with the FTS match snippet
+                msg.snippet = hit.get("snippet", "")
+                results.append(msg)
+        return results
+
+    def index_status(self) -> dict:
+        """Return search index statistics."""
+        from .search_index import SearchIndex
+
+        return SearchIndex().status()
+
     # ── Attachment operations ────────────────────────────────────────────
 
     def get_attachments(self, message_id: int) -> list[Attachment]:
