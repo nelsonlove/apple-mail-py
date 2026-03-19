@@ -19,6 +19,7 @@ class Message:
     flagged: bool
     has_attachments: bool
     conversation_id: int = 0
+    snippet: str = ""
     recipients: list[str] = field(default_factory=list)
 
 

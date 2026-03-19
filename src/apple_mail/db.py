@@ -123,11 +123,13 @@ class MailDB:
             m.read,
             COALESCE(m.flagged, 0) AS flagged,
             EXISTS(SELECT 1 FROM attachments att2 WHERE att2.message_id = m.ROWID) AS has_attachments,
-            COALESCE(m.conversation_id, 0) AS conversation_id
+            COALESCE(m.conversation_id, 0) AS conversation_id,
+            COALESCE(sm.summary, '') AS snippet
         FROM messages m
         LEFT JOIN subjects s ON m.subject = s.ROWID
         LEFT JOIN addresses a ON m.sender = a.ROWID
         LEFT JOIN mailboxes mb ON m.mailbox = mb.ROWID
+        LEFT JOIN summaries sm ON m.summary = sm.ROWID
         {join_clause}
         WHERE {where_clause}
         ORDER BY m.date_sent DESC
@@ -163,11 +165,13 @@ class MailDB:
             m.read,
             COALESCE(m.flagged, 0) AS flagged,
             EXISTS(SELECT 1 FROM attachments att WHERE att.message_id = m.ROWID) AS has_attachments,
-            COALESCE(m.conversation_id, 0) AS conversation_id
+            COALESCE(m.conversation_id, 0) AS conversation_id,
+            COALESCE(sm.summary, '') AS snippet
         FROM messages m
         LEFT JOIN subjects s ON m.subject = s.ROWID
         LEFT JOIN addresses a ON m.sender = a.ROWID
         LEFT JOIN mailboxes mb ON m.mailbox = mb.ROWID
+        LEFT JOIN summaries sm ON m.summary = sm.ROWID
         WHERE m.ROWID = ? AND m.deleted = 0
         LIMIT 1
         """
@@ -231,11 +235,13 @@ class MailDB:
             m.read,
             COALESCE(m.flagged, 0) AS flagged,
             EXISTS(SELECT 1 FROM attachments att WHERE att.message_id = m.ROWID) AS has_attachments,
-            COALESCE(m.conversation_id, 0) AS conversation_id
+            COALESCE(m.conversation_id, 0) AS conversation_id,
+            COALESCE(sm.summary, '') AS snippet
         FROM messages m
         LEFT JOIN subjects s ON m.subject = s.ROWID
         LEFT JOIN addresses a ON m.sender = a.ROWID
         LEFT JOIN mailboxes mb ON m.mailbox = mb.ROWID
+        LEFT JOIN summaries sm ON m.summary = sm.ROWID
         WHERE m.conversation_id = ? AND m.deleted = 0
         ORDER BY m.date_sent ASC
         """

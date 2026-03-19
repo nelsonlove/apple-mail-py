@@ -1,6 +1,6 @@
 # apple-mail-py
 
-Python library and CLI for reading Apple Mail on macOS.
+Python library and CLI for Apple Mail on macOS.
 
 ## Architecture
 
@@ -8,12 +8,12 @@ Python library and CLI for reading Apple Mail on macOS.
 src/
 ├── apple_mail/              # Access library (no CLI dependencies)
 │   ├── client.py            # MailClient: unified API (single entry point)
-│   ├── models.py            # Data classes: Message, Mailbox, Stats, MessageBody
+│   ├── models.py            # Data classes: Message, Mailbox, Stats, MessageBody, Thread
 │   ├── db.py                # SQLite read-only access to Envelope Index
 │   ├── db_finder.py         # Auto-detect Mail database location
-│   ├── applescript.py       # AppleScript for open/body operations
+│   ├── applescript.py       # AppleScript for open/body/write operations
 │   └── server.py            # FastMCP server (optional)
-├── apple_mail_cli/                # CLI package (consumes apple_mail)
+├── apple_mail_cli/          # CLI package (consumes apple_mail)
 │   └── cli.py               # Click-based commands
 plugin/
   claude-code/               # Claude Code plugin (MCP server)
@@ -41,7 +41,10 @@ just check                 # lint + type-check + test
 ## Key constraints
 
 - `MailClient` is the only public API — all external consumers use it
-- Methods return data classes (`Message`, `Mailbox`, `Stats`, `MessageBody`), never dicts
+- Methods return data classes (`Message`, `Mailbox`, `Stats`, `MessageBody`, `Thread`), never dicts
 - AppleScript calls are lazy-imported to avoid subprocess overhead on read-only paths
 - MCP dependency (`mcp` package) is optional — only needed for the server
-- Database access is strictly read-only
+- Database reads are via SQLite (fast), writes are via AppleScript (Mail.app)
+- No delete operation — archive only (by design)
+- No send — draft only (human reviews and sends)
+- `snippet` field comes from Mail's `summaries` table (~14% coverage); available when Apple Mail has indexed the message

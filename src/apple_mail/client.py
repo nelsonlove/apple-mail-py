@@ -299,6 +299,40 @@ class MailClient:
             bcc_addresses=bcc,
         )
 
+    # ── Bulk operations ───────────────────────────────────────────────
+
+    def bulk_archive(
+        self, message_ids: list[int], *, account: str | None = None
+    ) -> int:
+        """Archive multiple messages. Returns count of messages archived."""
+        from .applescript import move_message as as_move
+
+        count = 0
+        for mid in message_ids:
+            try:
+                as_move(
+                    **self._msg_context(mid),
+                    target_mailbox="Archive",
+                    target_account=account,
+                )
+                count += 1
+            except RuntimeError:
+                pass  # skip messages that can't be found
+        return count
+
+    def bulk_mark_read(self, message_ids: list[int], *, read: bool = True) -> int:
+        """Mark multiple messages as read/unread. Returns count processed."""
+        from .applescript import mark_read as as_mark
+
+        count = 0
+        for mid in message_ids:
+            try:
+                as_mark(**self._msg_context(mid), read=read)
+                count += 1
+            except RuntimeError:
+                pass
+        return count
+
 
 def _escape_yaml(s: str) -> str:
     """Escape a string for safe embedding in YAML double-quoted values."""
@@ -318,5 +352,6 @@ def _row_to_message(row: dict) -> Message:
         flagged=bool(row.get("flagged", 0)),
         has_attachments=bool(row.get("has_attachments", 0)),
         conversation_id=row.get("conversation_id", 0),
+        snippet=row.get("snippet", "") or "",
         recipients=row.get("recipients", []),
     )

@@ -36,7 +36,12 @@ def mail_db(tmp_path):
             flagged INTEGER DEFAULT 0,
             deleted INTEGER DEFAULT 0,
             mailbox INTEGER REFERENCES mailboxes(ROWID),
-            conversation_id INTEGER DEFAULT 0
+            conversation_id INTEGER DEFAULT 0,
+            summary INTEGER DEFAULT NULL
+        );
+        CREATE TABLE summaries (
+            ROWID INTEGER PRIMARY KEY,
+            summary TEXT
         );
         CREATE TABLE recipients (
             message_id INTEGER REFERENCES messages(ROWID),
@@ -61,11 +66,15 @@ def mail_db(tmp_path):
         INSERT INTO mailboxes VALUES (2, 'imap://user@imap.mail.me.com/Sent%20Messages');
         INSERT INTO mailboxes VALUES (3, 'imap://user@imap.mail.me.com/Junk');
 
+        -- Summaries (snippet text for messages that have them)
+        INSERT INTO summaries VALUES (1, 'Hi, just checking in on the test subject we discussed.');
+
         -- Messages 1 & 2 share conversation_id=100, message 3 is its own thread
-        INSERT INTO messages VALUES (1, 1, 1, 1742400000, 1742400000, 0, 0, 0, 1, 100);
-        INSERT INTO messages VALUES (2, 2, 2, 1742313600, 1742313600, 1, 0, 0, 1, 100);
-        INSERT INTO messages VALUES (3, 3, 3, 1742227200, 1742227200, 0, 1, 0, 2, 200);
-        INSERT INTO messages VALUES (4, 1, 1, 1742140800, 1742140800, 0, 0, 1, 1, 100);
+        -- message 1 has a summary (FK=1), others don't
+        INSERT INTO messages VALUES (1, 1, 1, 1742400000, 1742400000, 0, 0, 0, 1, 100, 1);
+        INSERT INTO messages VALUES (2, 2, 2, 1742313600, 1742313600, 1, 0, 0, 1, 100, NULL);
+        INSERT INTO messages VALUES (3, 3, 3, 1742227200, 1742227200, 0, 1, 0, 2, 200, NULL);
+        INSERT INTO messages VALUES (4, 1, 1, 1742140800, 1742140800, 0, 0, 1, 1, 100, NULL);
 
         INSERT INTO recipients VALUES (1, 2, 0);
         INSERT INTO recipients VALUES (2, 3, 0);

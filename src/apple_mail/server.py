@@ -187,6 +187,36 @@ def draft_reply(
         return {"error": str(exc)}
 
 
+@mcp.tool()
+def triage_inbox(days: int = 1, limit: int = 50) -> list[dict] | dict:
+    """Get unread messages with metadata for triage. Returns messages with id, subject, sender, sender_name, date, mailbox, recipients, has_attachments, conversation_id, and snippet (message preview text when available). Use this to categorize and prioritize the user's inbox."""
+    try:
+        messages = client.search(unread=True, days=days, limit=limit)
+        return [asdict(m) for m in messages]
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def bulk_archive(message_ids: list[int], account: str | None = None) -> dict:
+    """Archive multiple messages at once. Returns count of messages archived."""
+    try:
+        count = client.bulk_archive(message_ids, account=account)
+        return {"archived": count, "requested": len(message_ids)}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@mcp.tool()
+def bulk_mark_read(message_ids: list[int]) -> dict:
+    """Mark multiple messages as read at once. Returns count processed."""
+    try:
+        count = client.bulk_mark_read(message_ids)
+        return {"marked_read": count, "requested": len(message_ids)}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
 def main():
     mcp.run(transport="stdio")
 
