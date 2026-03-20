@@ -248,7 +248,17 @@ def create_draft(
         bcc_addresses: Optional BCC recipients.
     """
     safe_subject = _escape_applescript(subject)
-    safe_body = _escape_applescript(body)
+
+    # AppleScript string literals don't support \n escapes.
+    # Split body on newlines and join with AppleScript's linefeed constant.
+    body_lines = body.split("\n")
+    if len(body_lines) == 1:
+        body_expr = f'"{_escape_applescript(body)}"'
+    else:
+        parts = " & linefeed & ".join(
+            f'"{_escape_applescript(line)}"' for line in body_lines
+        )
+        body_expr = parts
 
     # Build recipient lines
     to_lines = "\n".join(
@@ -273,7 +283,7 @@ def create_draft(
 
     script = f'''
 tell application "Mail"
-    set newMsg to make new outgoing message with properties {{subject:"{safe_subject}", content:"{safe_body}", visible:false}}
+    set newMsg to make new outgoing message with properties {{subject:"{safe_subject}", content:{body_expr}, visible:false}}
     tell newMsg
 {to_lines}
 {cc_lines}
